@@ -28,7 +28,8 @@ const BankSchema = new mongoose.Schema({
     },
     balance: {
         type: Number,
-        required: true
+        required: true,
+        default: 0
     },
 });
 

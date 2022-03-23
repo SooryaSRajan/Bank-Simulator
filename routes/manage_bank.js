@@ -16,7 +16,6 @@ router.post("/addBankAccount", async (request, response) => {
 
     //validate account number
     if (account.toString().length !== 16) {
-        console.log(account.toString().length)
         return response.status(400).send("Please enter a valid account number");
     }
 
@@ -84,7 +83,7 @@ router.post("/getBankData", async (request, response) => {
 
     //get data if cvv expiry and account are correct
     const {account, cvv, expiry} = request.body;
-    //validate 
+    //validate
     if (!account || !cvv || !expiry) {
         return response.status(400).send("Please fill out all fields");
     }
@@ -105,6 +104,8 @@ router.post("/addAmount", async (request, response) => {
 
     //add amount if cvv expiry and account are correct
     const {account, cvv, expiry, amount} = request.body;
+
+    console.log(request.body)
     //get
     if (!account || !cvv || !expiry || !amount) {
         return response.status(400).send("Please fill out all fields");
@@ -113,16 +114,21 @@ router.post("/addAmount", async (request, response) => {
     //check if amount is negative
     if (amount < 0) {
         return response.status(400).send("Please enter a valid amount");
-    } 
+    }
 
     try {
         Bank.findOne({account: account, cvv: cvv, expiry: expiry}).then((bank) => {
-            bank.balance += amount;
-            bank.save().then(() => {
-                response.status(200).send("Amount added successfully");
-            }).catch((error) => {
-                response.status(400).send(error);
-            });
+            if(bank){
+                bank.balance += amount;
+                bank.save().then(() => {
+                    response.status(200).send("Amount added successfully");
+                }).catch((error) => {
+                    response.status(400).send(error);
+                });
+            }
+            else{
+                return response.status(400).send("This account does not exist");
+            }
         }).catch((error) => {
             response.status(400).send(error);
         });
@@ -141,20 +147,27 @@ router.post("/deductAmount", async (request, response) => {
     }
     if (amount < 0) {
         return response.status(400).send("Please enter a valid amount");
-    } 
+    }
     //get
     try {
         Bank.findOne({account: account, cvv: cvv, expiry: expiry}).then((bank) => {
+            console.log(bank)
             //check if amount is greater than balance
-            if (amount > bank.balance) {
-                return response.status(400).send("Insufficient funds");
+            if(bank){
+                if (amount > bank.balance) {
+                    return response.status(400).send("Insufficient funds");
+                }
+                bank.balance -= amount;
+                bank.save().then(() => {
+                    response.status(200).send("Amount deducted successfully");
+                }).catch((error) => {
+                    console.log(error)
+                    response.status(400).send(error);
+                });
             }
-            bank.balance -= amount;
-            bank.save().then(() => {
-                response.status(200).send("Amount deducted successfully");
-            }).catch((error) => {
-                response.status(400).send(error);
-            });
+            else{
+                return response.status(400).send("This account does not exist");
+            }
         }).catch((error) => {
             response.status(400).send(error);
         });
